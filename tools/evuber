@@ -1,0 +1,50 @@
+#!/bin/bash
+
+LIB_DIR="/usr/local/lib/evuber"
+PROG_DIR="${LIB_DIR}/src"
+TOOLS_DIR="${LIB_DIR}/tools"
+VENV="${LIB_DIR}/venv"
+
+showhelp() {
+  cat <<- EOF
+	usage: evuber command [args...]
+
+	COMMANDS
+
+	  fetch       Retrieve Uber trip summary emails
+	  scrape      Scrape trip summaries into Evertz expense forms and PDFs
+	  send        Send expense forms and reciept PDFs as email attachments
+	  clean       Remove leftover trip summaries and expense form materials
+	  configure   Adjust expense form settings, email addresses, etc.
+	  help        Show this help
+	EOF
+}
+
+if [[ "${#}" -lt 1 ]]; then
+    showhelp
+    exit 1
+fi
+
+cmd="${1}"
+case "${cmd}" in
+  fetch|scrape|send)
+    source "${VENV}/bin/activate"
+
+    prog="${cmd}.py"
+    shift
+    python3 "${PROG_DIR}/${prog}" "${@}"
+
+    deactivate
+    ;;
+  clean|configure)
+    "${TOOLS_DIR}/${cmd}"
+    ;;
+  help)
+    showhelp
+    exit 0
+    ;;
+  *)
+    showhelp
+    exit 1
+    ;;
+esac

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+rm -rvf evuber_*.html evuber_*.pdf evuber_*-*/

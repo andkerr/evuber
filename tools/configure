@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+
+from collections import namedtuple
+from getpass import getpass
+import json
+from pathlib import Path
+import textwrap
+
+
+constants = {
+    "OFFICE": "Burlington"
+}
+
+ConfigVar = namedtuple("ConfigVar",
+                       ["key", "prompt", "getdefault", "secret"],
+                       defaults=[None, False])
+
+config_vars = [
+    ConfigVar("NAME",
+              "Enter your name"),
+    ConfigVar("DEPT",
+              "Enter your department"),
+    ConfigVar("MANAGER",
+              "Enter your manager's name"),
+    ConfigVar("ADDRESSLINE1",
+              "Enter line 1 of your mailing address for reimbursement cheques"),
+    ConfigVar("ADDRESSLINE2",
+              "Enter line 2 of your mailing address for reimbursement cheques"),
+    ConfigVar("FETCH_ADDRESS",
+              "Enter the email addressess trips summaries will be fetched from"),
+    ConfigVar("FETCH_PASSWORD",
+              "Enter your fetch email password",
+              secret=True),
+    ConfigVar("FETCH_IMAP",
+              "Enter the IMAP domain of your fetch email"),
+    ConfigVar("FETCH_SMTP",
+              "Enter the SMTP domain of your fetch email"),
+    ConfigVar("SEND_ADDRESS",
+              "Enter the email address expense report materials will be sent to",
+              lambda c: c.get("FETCH_ADDR"))
+]
+
+
+def main():
+    config_dir = Path.home() / ".evuber"
+    config_file = Path("config.json")
+    config_path = config_dir / config_file
+
+    if config_path.exists():
+        config = json.load(open(config_path, "r"))
+        # prune unneeded keys from existing config
+        config = {k: v for k, v in config.items() if k in (var.key for var in config_vars)}
+
+    config |= constants
+
+    for var in config_vars:
+        default = getdefault(config, var)
+        if default:
+            prompt = f"{var.prompt} ({mask(default, var.secret)}): "
+        else:
+            prompt = f"{var.prompt}: "
+
+        try:
+            getinput = getpass if var.secret else input
+            val = getinput(prompt)
+        except KeyboardInterrupt:
+            print("")
+            return
+
+        config[var.key] = val if val else default
+
+    config_dir.mkdir(parents = True, exist_ok = True)
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")
+
+    print(textwrap.dedent(f"""\
+
+        Done! Your settings are stored at {config_path}
+
+        You can always change them later by editing {config_file} or
+        re-running evuber configure."""))
+
+
+def getdefault(config: dict, var: ConfigVar) -> str:
+    if (val := config.get(var.key)):
+        return val
+    elif var.getdefault and (val := var.getdefault(config)):
+        return val
+    return ""  # Dump empty values to JSON as "", rather than Null
+
+
+def mask(val: str, secret: bool) -> str:
+    if secret:
+        return "*" * len(val)
+    return val
+
+
+if __name__ == "__main__":
+    main()

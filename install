@@ -1,0 +1,46 @@
+#!/bin/bash
+
+LIB_DIR="/usr/local/lib/evuber"
+BIN_DIR="/usr/local/bin"
+VENV="${LIB_DIR}/venv"
+
+die() {
+    printf "Error: ${1}\n" >&2
+    exit 1
+}
+
+install_dependencies() {
+    printf "Installing Python dependencies...\n"
+
+    if ! python3 -m venv "${VENV}"; then
+        die "Could not create new virtual environment at ${VENV}"
+    fi
+
+    if ! source "${VENV}/bin/activate" ||
+       !  pip install -r requirements.txt; then
+        rm -rf "${VENV}"
+        die "Could not install dependencies"
+    fi
+
+    deactivate
+
+    if ! chmod 755 "${VENV}"; then
+        rm -rf "${VENV}"
+        die "Could not set "${VENV}" permissions"
+    fi
+}
+
+install_sources() {
+    printf "Installing sources to ${LIB_DIR}...\n"
+
+    cp -R src "${LIB_DIR}"
+    cp -R tools "${LIB_DIR}"
+    mv "${LIB_DIR}/tools/evuber" "${BIN_DIR}"
+}
+
+if ! mkdir -p "${LIB_DIR}"; then
+    die "Could not create ${LIB_DIR}"
+fi
+
+install_dependencies
+install_sources

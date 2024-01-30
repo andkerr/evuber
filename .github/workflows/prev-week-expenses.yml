@@ -1,0 +1,45 @@
+# A workflow to schedule Uber expense reports
+#
+# GitHub automatically disables scheduled workflows in repositories that have
+# been inactive for more than 60 days, so this probably isn't the best "set it
+# and forget it" strategy for processing Uber receipts. If can run it on a local
+# machine that is most always on and connected to the internet, scheduling your
+# expense reports with cron, Windows Task Scheduler, or systemd timers, may be a
+# simpler choice.
+#
+# Before running this workflow,
+#   - Add your email settings to your repository's environment (see below)
+#   - Put a copy of the expense form template named template.xlsx in your
+#     repository root, fill in your name, department, address, etc., and push
+#     it to GitHub
+#   - Make sure this workflow is enabled in your repository's Actions tab
+#
+name: prev-week-expenses
+on:
+  schedule:
+    - cron: '21 6 * * 0' # Run every Sunday at 6:21 AM (UTC)
+  workflow_dispatch:
+env:
+  # These are the same settings evuber reads from .evuber/config.json when you
+  # run it locally. To make them available in GitHub Actions, add them to your
+  # repository's environment at Settings > Secrets and Variables > Actions.
+  FETCH_ADDRESS: ${{ secrets.FETCH_ADDRESS }}
+  FETCH_PASSWORD: ${{ secrets.FETCH_PASSWORD }}
+  FETCH_IMAP: ${{ secrets.FETCH_IMAP }}
+  FETCH_SMTP: ${{ secrets.FETCH_SMTP }}
+  SEND_ADDRESS: ${{ vars.SEND_ADDRESS }}
+jobs:
+  prepare-expense-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Process receipts
+        run: python3 src/fetch.py --since "$(date -d'1 week ago' +'%d-%b-%Y')" | python3 src/scrape.py | python3 src/send.py
