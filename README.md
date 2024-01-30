@@ -34,7 +34,8 @@ $ sudo ./install
 $ evuber configure
 ```
 
-4. Put a blank copy of the Evertz expense form template in `$HOME/.evuber`.
+4. Put a blank copy of the Evertz expense form template named `template.xlsx` in
+   `$HOME/.evuber`.
 
 ## Usage
 
