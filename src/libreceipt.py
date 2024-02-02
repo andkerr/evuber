@@ -259,7 +259,7 @@ def senddir(directory: Path,
 
     if not directory.name.startswith("evuber_"):
         log.warn(f"It looks like you're trying to send a directory that wasn't created by evuber: {directory}")
-    daterange = directory.name[directory.name.find("_"):]
+    daterange = directory.name[directory.name.find("_") + 1:]
     wkstart, wkend = daterange.split("-")
 
     msg = EmailMessage()
