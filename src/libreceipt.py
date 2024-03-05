@@ -63,7 +63,7 @@ def trip_summaries(address: str,
     conds = ['FROM "noreply@uber.com"',
             f'BODY "{descr}"',
              'BODY "Sutton"',
-             'BODY "Harvester"',
+             'OR BODY "Harvester" BODY "Fairview"',
              'BODY "Burlington, ON"',
              'NOT BODY "Payments"']
     if since and until:
@@ -137,6 +137,7 @@ def parse_trip(receipt: Path) -> UberTrip:
 
 def gettext(receipt: Path) -> str:
     if not receipt.exists():
+        log.error(f"gettext: {receipt} does not exist")
         return ""
 
     if receipt.suffix == ".pdf":
@@ -144,11 +145,12 @@ def gettext(receipt: Path) -> str:
     elif receipt.suffix == ".html":
         with open(receipt, "r") as f:
             html = f.read().rstrip()
-            # Replace tags with a space. They can confuse parsing routines, and
-            # whitespace ensures that text contained in adjacent tag pairs isn't
-            # concatenated by their removal.
+            # Replace tags with a space. They can confuse the receipt parsing
+            # routine, and whitespace ensures that text contained in adjacent
+            # tag pairs isn't concatenated by their removal.
             return re.sub(r"<[^>]*>", " ", html)
     else:
+        log.warning(f"Unrecognized receipt file type: {receipt.suffix}")
         return ""
 
 
